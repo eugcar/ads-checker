@@ -1,0 +1,24 @@
+name: Build and test the application
+
+on:
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build the Docker image
+      run: docker build -t ads-checker/php-composer:7.4 .
+
+    - name: Build the application
+      run: docker run --rm --interactive --tty --volume $PWD:/app --user $(id -u):$(id -g) composer install
+
+    - name: Execute tests
+      run:
+        - docker run --rm --interactive --tty --volume $PWD:/usr/src/myapp --user $(id -u):$(id -g) -w /usr/src/myapp ads-checker/php-composer:7.4 vendor/bin/php-cs-fixer fix --config .php_cs.dist --allow-risky yes --dry-run --stop-on-violation
+        - docker run --rm --interactive --tty --volume $PWD:/usr/src/myapp --user $(id -u):$(id -g) -w /usr/src/myapp ads-checker/php-composer:7.4 bin/phpunit
